@@ -7,7 +7,9 @@
 
     <div class="card mb-2">
       <h3 class="bold mb-1">Quick Actions</h3>
-      <button class="mb-1">+ Create New Campaign</button>
+      <router-link to="/newcampaign">
+        <button class="mb-1">+ Create New Campaign</button>
+      </router-link>
       
     </div>
     <div class="card">

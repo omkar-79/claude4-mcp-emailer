@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Auth from '../components/Auth.vue'
 import Dashboard from '../components/Dashboard.vue'
+import NewCampaign from '../components/NewCampaign.vue'
 
 const routes = [
   {
@@ -28,6 +29,12 @@ const routes = [
     path: '/campaigns',
     name: 'Campaigns',
     component: () => import('../components/Campaigns.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/newcampaign',
+    name: 'NewCampaign',
+    component: () => import('../components/NewCampaign.vue'),
     meta: { requiresAuth: true }
   }
 ]
