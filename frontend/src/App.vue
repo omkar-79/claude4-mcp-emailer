@@ -1,24 +1,27 @@
-<script setup lang="ts">
-import CsvUploader from './components/CsvUploader.vue'
+<script setup>
+// The router-view will handle all the routing and component rendering
 </script>
 
 <template>
-  <div class="app">
-    <h1>CSV File Uploader</h1>
-    <CsvUploader />
-  </div>
+  <router-view></router-view>
 </template>
 
-<style scoped>
-.app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+<style>
+/* Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-h1 {
-  margin-bottom: 2rem;
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
   color: #2c3e50;
+}
+
+button {
+  font-family: inherit;
 }
 </style>

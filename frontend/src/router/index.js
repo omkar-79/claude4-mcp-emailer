@@ -1,13 +1,8 @@
-import './assets/main.css'
+import { createRouter, createWebHistory } from 'vue-router'
+import Auth from '../components/Auth.vue'
+import Dashboard from '../components/Dashboard.vue'
 
-import { createApp } from 'vue'
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-import App from './App.vue'
-import Auth from './components/Auth.vue'
-import Dashboard from './components/Dashboard.vue'
-
-// Define routes with proper typing
-const routes: RouteRecordRaw[] = [
+const routes = [
   {
     path: '/',
     redirect: '/login'
@@ -26,24 +21,23 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/profile',
     name: 'Profile',
-    component: () => import('./components/Profile.vue'),
+    component: () => import('../components/Profile.vue'),
     meta: { requiresAuth: true }
   },
   {
     path: '/campaigns',
     name: 'Campaigns',
-    component: () => import('./components/Campaigns.vue'),
+    component: () => import('../components/Campaigns.vue'),
     meta: { requiresAuth: true }
   }
 ]
 
-// Create router instance
 const router = createRouter({
   history: createWebHistory(),
   routes
 })
 
-// Navigation guard with proper typing
+// Navigation guard
 router.beforeEach((to, from, next) => {
   const isAuthenticated = !!sessionStorage.getItem('token')
   
@@ -54,7 +48,4 @@ router.beforeEach((to, from, next) => {
   }
 })
 
-// Create and mount the app
-const app = createApp(App)
-app.use(router)
-app.mount('#app')
+export default router 

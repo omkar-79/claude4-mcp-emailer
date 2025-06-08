@@ -75,10 +75,36 @@ const headers = ref<string[]>([])
 const selectedFile = ref<File | null>(null)
 const dataDetails = ref('')
 
-const handleFileUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files && target.files.length > 0) {
-    selectedFile.value = target.files[0]
+const handleFileUpload = async () => {
+  try {
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+      throw new Error('Not authenticated')
+    }
+
+    const formData = new FormData()
+    formData.append('file', selectedFile.value)
+    formData.append('user_input', dataDetails.value)
+
+    const response = await fetch('http://localhost:8000/api/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    })
+
+    if (!response.ok) {
+      throw new Error('Upload failed')
+    }
+
+    const data = await response.json()
+    // Handle successful upload
+    // ... existing code ...
+  } catch (error) {
+    console.error('Error uploading file:', error)
+    // Handle error
+    // ... existing code ...
   }
 }
 
@@ -110,10 +136,45 @@ const uploadFile = () => {
   reader.readAsText(selectedFile.value)
 }
 
-const analyzeData = () => {
-  // This function will be implemented later to handle the actual analysis
-  console.log('Analysis requested with details:', dataDetails.value)
-  console.log('Data to analyze:', csvData.value)
+const analyzeData = async () => {
+  if (!selectedFile.value || !dataDetails.value) {
+    alert('Please select a file and provide analysis details');
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+    formData.append('file', selectedFile.value);
+    formData.append('analysis_details', dataDetails.value);
+
+    const response = await fetch('http://localhost:8000/api/data-sessions/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+      },
+      mode: 'cors',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.detail || `Failed to upload data: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log('Data session created:', result);
+    alert('File uploaded successfully!');
+    
+    // Clear the form after successful upload
+    selectedFile.value = null;
+    dataDetails.value = '';
+    csvData.value = [];
+    headers.value = [];
+  } catch (error) {
+    console.error('Error uploading data:', error);
+    alert(error.message || 'Failed to upload data. Please try again.');
+  }
 }
 </script>
 
