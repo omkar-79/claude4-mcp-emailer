@@ -1,6 +1,6 @@
 <template>
   <div class="auth-container">
-    <div class="auth-box">
+    <div class="auth-box card">
       <h2>{{ isLogin ? 'Login' : 'Sign Up' }}</h2>
       
       <!-- Error message -->
@@ -35,7 +35,7 @@
             class="form-input"
           />
         </div>
-        <button type="submit" class="auth-button">Login</button>
+        <button type="submit" class="btn btn-primary">Login</button>
       </form>
 
       <!-- Signup Form -->
@@ -70,7 +70,7 @@
             class="form-input"
           />
         </div>
-        <button type="submit" class="auth-button">Sign Up</button>
+        <button type="submit" class="btn btn-primary">Sign Up</button>
       </form>
 
       <!-- Toggle between login and signup -->
@@ -84,7 +84,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -188,92 +188,104 @@ const handleSignup = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background-color: #f5f5f5;
+  min-height: calc(100vh - 64px);
+  padding: var(--spacing-xl);
 }
 
 .auth-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
-}
-
-h2 {
-  text-align: center;
-  color: #2c3e50;
-  margin-bottom: 1.5rem;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--spacing-xs);
 }
 
-label {
-  color: #2c3e50;
-  font-size: 0.9rem;
+.form-group label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
 }
 
 .form-input {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   font-size: 1rem;
+  background: #f9fafb;
+  transition: border-color 0.2s;
+}
+.form-input:focus {
+  border-color: #3182ce;
+  outline: none;
+  background: #fff;
 }
 
-.auth-button {
-  background-color: #42b983;
-  color: white;
-  padding: 0.75rem;
+.btn {
+  background: linear-gradient(90deg, #3182ce 0%, #63b3ed 100%);
+  color: #fff;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(49, 130, 206, 0.08);
 }
-
-.auth-button:hover {
-  background-color: #3aa876;
+.btn:hover {
+  background: linear-gradient(90deg, #2563eb 0%, #4299e1 100%);
 }
 
 .toggle-text {
   text-align: center;
-  margin-top: 1rem;
-  color: #666;
+  margin-top: var(--spacing-lg);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
-
 .toggle-link {
-  color: #42b983;
+  color: var(--primary-color);
   text-decoration: none;
+  font-weight: 500;
+  margin-left: var(--spacing-xs);
 }
-
 .toggle-link:hover {
   text-decoration: underline;
 }
 
 .error-message {
-  background-color: #ffebee;
-  color: #c62828;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+  background: var(--error-color);
+  color: white;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+.success-message {
+  background: var(--success-color);
+  color: white;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
 }
 
-.success-message {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  padding: 0.75rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
+@media (max-width: 640px) {
+  .auth-container {
+    padding: var(--spacing-md);
+  }
+  
+  .auth-box {
+    padding: var(--spacing-md);
+  }
 }
 </style> 

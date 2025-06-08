@@ -1,9 +1,13 @@
-<script setup>
+<script setup lang="ts">
+import Layout from './components/Layout.vue'
+import './assets/global.css'
 // The router-view will handle all the routing and component rendering
 </script>
 
 <template>
-  <router-view></router-view>
+  <Layout>
+    <router-view></router-view>
+  </Layout>
 </template>
 
 <style>
