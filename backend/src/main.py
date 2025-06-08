@@ -52,7 +52,10 @@ class Token(BaseModel):
 load_dotenv()
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
 CLAUDE_API_URL = os.getenv("CLAUDE_API_URL", "https://api.anthropic.com/v1/messages")
-MCP_UPLOAD_URL = os.getenv("MCP_UPLOAD_URL", "https://api.anthropic.com/v1/mcp/upload")
+MCP_UPLOAD_URL = os.getenv("MCP_UPLOAD_URL")
+
+# File upload configuration for Cloudflare Worker
+# Your worker only handles file uploads and returns context_id
 
 # Authentication endpoints
 @app.post("/api/register", response_model=UserResponse)
@@ -119,52 +122,164 @@ async def analyze_campaign(
     file: UploadFile = File(...),
     details: str = Form(...)
 ):
-    # 1. Upload CSV to local MCP server
+    """
+    Analyze customer campaign data using Claude API with actual file content.
+    
+    This approach:
+    1. Reads the uploaded file content locally
+    2. Uploads file to Cloudflare Worker for backup/storage (gets context_id)
+    3. Sends the actual file content to Claude for analysis
+    
+    This ensures Claude has access to the real data for accurate analysis.
+    """
+    # Read file content first
+    file_content = await file.read()
+    file_text = file_content.decode('utf-8')
+    
+    # Reset file pointer for the upload to Cloudflare Worker
+    await file.seek(0)
+    
+    # 1. Upload CSV to Cloudflare Worker for storage/backup
     headers = {
         "x-api-key": CLAUDE_API_KEY,
         "anthropic-version": "2023-06-01"
     }
-    files = {"file": (file.filename, await file.read(), file.content_type or "text/csv")}
+    files = {"file": (file.filename, file_content, file.content_type or "text/csv")}
     try:
         async with httpx.AsyncClient() as client:
-            mcp_resp = await client.post("http://localhost:8000/api/mcp-upload/", headers=headers, files=files)
+            mcp_resp = await client.post(MCP_UPLOAD_URL, files=files)
             mcp_resp.raise_for_status()
-            context_id = mcp_resp.json()["context_id"]
-            print(f"[DEBUG] MCP upload response: {mcp_resp.json()}")
+            mcp_data = mcp_resp.json()
+            context_id = mcp_data["context_id"]
+            print(f"[DEBUG] Cloudflare Worker upload response: {mcp_data}")
+            print(f"[DEBUG] Received context_id: {context_id}")
     except Exception as e:
-        print(f"[DEBUG] MCP upload error: {e}")
-        raise HTTPException(status_code=500, detail=f"MCP upload failed: {str(e)}")
+        print(f"[DEBUG] Cloudflare Worker upload error: {e}")
+        # Continue with analysis even if backup upload fails
+        context_id = f"local_{int(datetime.utcnow().timestamp())}"
+        print(f"[DEBUG] Using local context_id: {context_id}")
 
-    # 2. Call Claude LLM with context
-    prompt = f"Analyze the following customer data and provide a summary. Details: {details}"
+    # 2. Prepare data preview for Claude (limit size to avoid token limits)
+    if len(file_text) > 10000:  # If file is very large, truncate for preview
+        data_preview = file_text[:10000] + "\n\n[... file truncated for analysis ...]"
+        file_size_note = f"Note: File is {len(file_text)} characters. Showing first 10,000 characters."
+    else:
+        data_preview = file_text
+        file_size_note = f"Complete file content ({len(file_text)} characters):"
+
+    # 3. Call Claude API with actual file content
+    prompt = f"""Please analyze the following customer campaign data:
+
+{file_size_note}
+
+```csv
+{data_preview}
+```
+
+Additional context: {details}
+
+Please provide a comprehensive analysis including:
+- Customer demographics and segmentation patterns
+- Key behavioral trends and insights from the data
+- Campaign performance indicators visible in the data
+- Specific data-driven recommendations for optimization
+- Risk factors and growth opportunities based on the actual data patterns
+- Summary statistics and key metrics from the dataset
+
+Focus on actionable insights derived directly from the data provided above.
+"""
+    
     payload = {
-        "model": "claude-3-opus-20240229",
-        "max_tokens": 1024,
+        "model": "claude-3-5-sonnet-20241022",  # Latest Claude model
+        "max_tokens": 4096,
         "messages": [
             {"role": "user", "content": prompt}
         ],
+        "system": "You are an expert data analyst specializing in customer campaign analysis. Analyze the provided CSV data thoroughly and provide specific, data-driven insights based on the actual content shown."
     }
+    
     headers_llm = {
         **headers,
         "content-type": "application/json"
     }
+    
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             llm_resp = await client.post(CLAUDE_API_URL, headers=headers_llm, json=payload)
             llm_resp.raise_for_status()
             llm_result = llm_resp.json()
-            print(f"[DEBUG] LLM response: {llm_result}")
+            print(f"[DEBUG] Claude API response: {llm_result}")
+            
+            # Extract the response content
+            if "content" in llm_result and len(llm_result["content"]) > 0:
+                response_text = llm_result["content"][0]["text"]
+            else:
+                response_text = "Analysis completed but no content returned."
+                
+    except httpx.HTTPStatusError as e:
+        print(f"[DEBUG] Claude API HTTP error: {e.response.status_code} - {e.response.text}")
+        raise HTTPException(status_code=500, detail=f"Claude API error: {e.response.status_code}")
     except Exception as e:
-        print(f"[DEBUG] LLM call error: {e}")
-        raise HTTPException(status_code=500, detail=f"LLM call failed: {str(e)}")
-    return {"llm_response": llm_result["content"][0]["text"], "context_id": context_id}
+        print(f"[DEBUG] Claude API call error: {e}")
+        raise HTTPException(status_code=500, detail=f"Claude API call failed: {str(e)}")
+    
+    return {
+        "llm_response": response_text, 
+        "context_id": context_id,
+        "file_size": len(file_text),
+        "file_name": file.filename,
+        "upload_url": MCP_UPLOAD_URL,
+        "status": "success"
+    }
 
 @app.post("/api/mcp-upload/")
 async def mcp_upload(file: UploadFile = File(...)):
-    # Simulate MCP server behavior: accept file and return a mock context_id
-    print(f"[DEBUG] MCP upload received file: {file.filename}")
-    # Read file content (optional, for logging)
-    content = await file.read()
-    print(f"[DEBUG] MCP upload file size: {len(content)} bytes")
-    # Return a mock context_id
-    return {"context_id": "mock_context_id_123"} 
+    """Proxy file upload to Cloudflare Worker MCP server and return context_id"""
+    files = {"file": (file.filename, await file.read(), file.content_type or "text/csv")}
+    try:
+        async with httpx.AsyncClient() as client:
+            mcp_resp = await client.post(MCP_UPLOAD_URL, files=files)
+            mcp_resp.raise_for_status()
+            mcp_data = mcp_resp.json()
+            context_id = mcp_data["context_id"]
+            print(f"[DEBUG] MCP proxy upload response: {mcp_data}")
+            print(f"[DEBUG] Received context_id from MCP: {context_id}")
+            return {"context_id": context_id, "status": "success"}
+    except Exception as e:
+        print(f"[DEBUG] MCP proxy upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"MCP proxy upload failed: {str(e)}")
+
+@app.get("/api/upload/health")
+async def upload_health_check():
+    """Check health of Cloudflare Worker file upload service"""
+    try:
+        # Test connection to Cloudflare Worker upload endpoint
+        async with httpx.AsyncClient() as client:
+            # Try a simple HEAD request to check if upload endpoint is accessible
+            response = await client.head(MCP_UPLOAD_URL, timeout=10.0)
+            worker_status = "healthy" if response.status_code in [200, 405] else "unhealthy"  # 405 = Method Not Allowed is ok for HEAD
+        
+        return {
+            "status": "healthy",
+            "upload_url": MCP_UPLOAD_URL,
+            "cloudflare_worker_status": worker_status,
+            "claude_api_configured": bool(CLAUDE_API_KEY),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "upload_url": MCP_UPLOAD_URL,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+@app.get("/api/upload/config")
+async def get_upload_config():
+    """Get current upload configuration (without sensitive data)"""
+    return {
+        "upload_url": MCP_UPLOAD_URL,
+        "supported_formats": ["csv", "text/csv"],
+        "worker_type": "cloudflare",
+        "functionality": "file_upload_only"
+    }
