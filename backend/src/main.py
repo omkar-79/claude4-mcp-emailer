@@ -178,15 +178,7 @@ async def analyze_campaign(
 
 Additional context: {details}
 
-Please provide a comprehensive analysis including:
-- Customer demographics and segmentation patterns
-- Key behavioral trends and insights from the data
-- Campaign performance indicators visible in the data
-- Specific data-driven recommendations for optimization
-- Risk factors and growth opportunities based on the actual data patterns
-- Summary statistics and key metrics from the dataset
-
-Focus on actionable insights derived directly from the data provided above.
+Provide a detailed analysis of the data, and a brief advice on sending emails to the customers.
 """
     
     payload = {
@@ -195,7 +187,7 @@ Focus on actionable insights derived directly from the data provided above.
         "messages": [
             {"role": "user", "content": prompt}
         ],
-        "system": "You are an expert data analyst specializing in customer campaign analysis. Analyze the provided CSV data thoroughly and provide specific, data-driven insights based on the actual content shown."
+        "system": "You are an expert marketing analyst and customer engagement expert. Analyze the provided CSV data thoroughly with the additional context provided."
     }
     
     headers_llm = {
@@ -283,3 +275,156 @@ async def get_upload_config():
         "worker_type": "cloudflare",
         "functionality": "file_upload_only"
     }
+
+@app.post("/api/generate-emails/")
+async def generate_emails(request: dict):
+    """
+    Generate personalized marketing emails for selected customers using Claude API.
+    
+    Expected request format:
+    {
+        "customers": [list of customer data objects],
+        "headers": [list of CSV column headers],
+        "customer_id_column": "column_name",
+        "campaign_details": "campaign description",
+        "context_id": "optional_context_id"
+    }
+    """
+    try:
+        customers = request.get("customers", [])
+        headers = request.get("headers", [])
+        customer_id_column = request.get("customer_id_column", "")
+        campaign_details = request.get("campaign_details", "")
+        context_id = request.get("context_id", "")
+        
+        if not customers or not headers or not customer_id_column:
+            raise HTTPException(status_code=400, detail="Missing required fields: customers, headers, or customer_id_column")
+        
+        # Prepare customer data for Claude
+        customer_data_text = ""
+        for i, customer in enumerate(customers):
+            customer_data_text += f"\n--- Customer {i+1} ---\n"
+            customer_data_text += f"Customer ID ({customer_id_column}): {customer.get(customer_id_column, 'N/A')}\n"
+            for header in headers:
+                customer_data_text += f"{header}: {customer.get(header, 'N/A')}\n"
+        
+        # Create prompt for Claude
+        prompt = f"""You are an expert marketing email writer. Generate personalized marketing emails for the following customers based on their data and the campaign details provided.
+
+Campaign Details: {campaign_details}
+
+Customer Data:
+{customer_data_text}
+
+Instructions:
+1. Create a personalized marketing email for EACH customer
+2. Use their actual data (name, preferences, purchase history, etc.) to personalize the content
+3. Make each email engaging, relevant, and action-oriented
+4. Keep emails concise but compelling (200-300 words each)
+5. Include a clear call-to-action
+6. Use a professional yet friendly tone
+7. Format each email with a clear subject line and body
+
+Please format your response as follows for each customer:
+
+CUSTOMER_ID: [customer_id_value]
+SUBJECT: [email subject line]
+BODY:
+[email content]
+
+---
+
+Generate emails for all {len(customers)} customers provided."""
+
+        # Call Claude API
+        payload = {
+            "model": "claude-3-5-sonnet-20241022",
+            "max_tokens": 4000,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "system": "You are an expert marketing email copywriter who creates highly personalized and effective marketing emails based on customer data."
+        }
+        
+        headers_api = {
+            "x-api-key": CLAUDE_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json"
+        }
+        
+        print(f"[DEBUG] Email generation - Sending request to Claude API for {len(customers)} customers")
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(CLAUDE_API_URL, headers=headers_api, json=payload)
+            response.raise_for_status()
+            claude_result = response.json()
+            
+            if "content" in claude_result and len(claude_result["content"]) > 0:
+                claude_response = claude_result["content"][0]["text"]
+            else:
+                claude_response = "No email content generated."
+        
+        print(f"[DEBUG] Claude API response received: {len(claude_response)} characters")
+        
+        # Parse Claude's response to extract individual emails
+        emails = []
+        email_sections = claude_response.split("CUSTOMER_ID:")
+        
+        for section in email_sections[1:]:  # Skip the first empty section
+            try:
+                lines = section.strip().split('\n')
+                customer_id = lines[0].strip()
+                
+                # Find subject line
+                subject = ""
+                body = ""
+                body_started = False
+                
+                for line in lines[1:]:
+                    if line.startswith("SUBJECT:"):
+                        subject = line.replace("SUBJECT:", "").strip()
+                    elif line.startswith("BODY:"):
+                        body_started = True
+                    elif body_started and not line.startswith("---"):
+                        body += line + "\n"
+                
+                emails.append({
+                    "customer_id": customer_id,
+                    "subject": subject,
+                    "content": body.strip()
+                })
+                
+            except Exception as e:
+                print(f"[DEBUG] Error parsing email section: {e}")
+                # Fallback: create a basic email
+                emails.append({
+                    "customer_id": f"Customer {len(emails) + 1}",
+                    "subject": "Personalized Offer Just for You",
+                    "content": "We have a special offer tailored just for you based on your preferences."
+                })
+        
+        # If parsing failed, create fallback emails
+        if len(emails) != len(customers):
+            print(f"[DEBUG] Email parsing incomplete. Expected {len(customers)}, got {len(emails)}. Creating fallback emails.")
+            emails = []
+            for i, customer in enumerate(customers):
+                customer_id = customer.get(customer_id_column, f"Customer {i+1}")
+                emails.append({
+                    "customer_id": customer_id,
+                    "subject": "Personalized Marketing Message",
+                    "content": f"Dear {customer.get('name', customer_id)},\n\nWe have exciting offers tailored specifically for you based on your profile and preferences.\n\n{campaign_details}\n\nDon't miss out on this opportunity!\n\nBest regards,\nYour Marketing Team"
+                })
+        
+        return {
+            "emails": emails,
+            "total_generated": len(emails),
+            "context_id": context_id,
+            "status": "success"
+        }
+        
+    except httpx.HTTPStatusError as e:
+        print(f"[DEBUG] Claude API HTTP error: {e.response.status_code} - {e.response.text}")
+        raise HTTPException(status_code=500, detail=f"Claude API error: {e.response.status_code}")
+    except Exception as e:
+        print(f"[DEBUG] Email generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Email generation failed: {str(e)}")

@@ -1,0 +1,21 @@
+customer_id,first_name,last_name,email,gender,age,join_date,last_purchase_date,purchase_count,total_spent,average_basket_value,preferred_category,loyalty_status,city,state,items_purchased
+CUST0001,Alex,Smith,alex.smith1@example.com,Male,57,2021-11-04,2025-03-18,3,736.25,245.42,Clothing,Bronze,City39,CA,"['Sneakers', 'Jacket', 'Hat', 'Jeans', 'T-Shirt']"
+CUST0002,Jane,Miller,jane.miller2@example.com,Female,20,2019-07-14,2021-07-03,38,885.64,23.31,Groceries,Platinum,City32,OH,"['Eggs', 'Milk', 'Cheese', 'Bread']"
+CUST0003,Sarah,Rodriguez,sarah.rodriguez3@example.com,Female,69,2019-04-06,2024-03-24,31,2789.84,89.99,Sports,Platinum,City62,NC,"['Yoga Mat', 'Basketball', 'Running Shoes', 'Dumbbells', 'Tennis Racket']"
+CUST0004,Jane,Jones,jane.jones4@example.com,Female,50,2019-12-20,2020-03-11,43,4835.12,112.44,Sports,Silver,City61,MI,"['Tennis Racket', 'Basketball']"
+CUST0005,David,Williams,david.williams5@example.com,Male,53,2022-01-25,2024-09-09,20,235.27,11.76,Health & Beauty,Gold,City53,NY,"['Toothpaste', 'Shampoo', 'Moisturizer']"
+CUST0006,Chris,Williams,chris.williams6@example.com,Female,46,2020-10-06,2022-05-30,21,300.69,14.32,Sports,Bronze,City4,NC,['Basketball']
+CUST0007,David,Brown,david.brown7@example.com,Male,38,2022-10-05,2023-07-03,3,1890.98,630.33,Sports,Silver,City45,GA,['Basketball']
+CUST0008,John,Wilson,john.wilson8@example.com,Male,41,2023-02-23,2024-07-17,46,4573.28,99.42,Home & Kitchen,Bronze,City80,TX,"['Vacuum Cleaner', 'Knife Set', 'Toaster', 'Coffee Maker']"
+CUST0009,David,Miller,david.miller9@example.com,Male,18,2020-11-16,2021-08-28,34,3209.08,94.38,Sports,Platinum,City76,NC,"['Basketball', 'Tennis Racket', 'Yoga Mat', 'Dumbbells']"
+CUST0010,Sarah,Smith,sarah.smith10@example.com,Female,36,2021-10-30,2023-07-02,4,4495.33,1123.83,Health & Beauty,Silver,City75,NY,"['Perfume', 'Moisturizer', 'Shampoo']"
+CUST0011,Emily,Davis,emily.davis11@example.com,Male,18,2021-03-18,2023-09-22,50,1110.78,22.22,Home & Kitchen,Bronze,City35,NY,"['Coffee Maker', 'Toaster']"
+CUST0012,Michael,Brown,michael.brown12@example.com,Male,56,2023-09-11,2024-10-19,26,3052.32,117.4,Groceries,Platinum,City44,MI,['Bread']
+CUST0013,Chris,Wilson,chris.wilson13@example.com,Male,47,2023-06-15,2025-04-12,30,2842.38,94.75,Home & Kitchen,Platinum,City29,TX,"['Coffee Maker', 'Vacuum Cleaner', 'Toaster']"
+CUST0014,Chris,Miller,chris.miller14@example.com,Male,55,2018-11-14,2024-11-15,25,2957.1,118.28,Clothing,Bronze,City80,IL,['T-Shirt']
+CUST0015,Sarah,Johnson,sarah.johnson15@example.com,Female,24,2022-05-13,2024-02-07,39,3499.29,89.73,Home & Kitchen,Bronze,City59,OH,['Blender']
+CUST0016,Laura,Smith,laura.smith16@example.com,Male,19,2020-12-27,2021-10-09,18,4647.12,258.17,Automotive,Platinum,City26,CA,['Tire Inflator']
+CUST0017,Emily,Miller,emily.miller17@example.com,Male,30,2018-09-16,2020-12-26,38,4164.22,109.58,Clothing,Gold,City73,FL,"['Jeans', 'Hat', 'Sneakers', 'Jacket']"
+CUST0018,John,Garcia,john.garcia18@example.com,Male,25,2019-09-25,2021-02-09,26,3937.38,151.44,Electronics,Bronze,City64,FL,"['Headphones', 'Bluetooth Speaker']"
+CUST0019,Sarah,Garcia,sarah.garcia19@example.com,Female,27,2020-11-18,2021-06-26,8,4133.56,516.7,Groceries,Bronze,City77,MI,"['Milk', 'Bread']"
+CUST0020,Laura,Davis,laura.davis20@example.com,Female,37,2021-05-17,2023-08-06,1,2996.35,2996.35,Groceries,Gold,City59,GA,"['Milk', 'Eggs']"
